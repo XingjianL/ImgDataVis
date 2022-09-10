@@ -68,6 +68,7 @@ class Visualization:
     
     def show_img(self, img):
         ax = self.fig.add_subplot(self.subplot_size, self.subplot_size, self.current_fig)
+        self.current_fig += 1
         ax.imshow(img)
 
     def clear_figs(self, iterations = 20):
@@ -110,6 +111,8 @@ while(cap.isOpened()):
     #img_vis.vis_color_distribution_ch(frame, channel=1)
     #img_vis.vis_color_distribution_ch(frame, channel=2)
     img_vis.show_img(frame)
+    img_vis.show_img(img_prep.simplify_by_pca(frame, img_prep.color_3d_PCA(color), dim=2))
+    img_vis.show_img(img_prep.simplify_by_pca(frame, img_prep.color_3d_PCA(color), dim=1))
     print(img_prep.color_3d_PCA(frame))
     print("new frame")
     img_vis.show_plot()

@@ -72,8 +72,29 @@ class ImagePrep:
     def color_3d_PCA(self, image):
         pca_vector =[]
         coords_data = image.reshape((-1,3)).T            # 3 x n matrix of coords [[b1,b2,...],[g1,g2,...],[r1,r2,...]]
-        mean = np.mean(coords_data,axis=1,keepdims=True)                            # center of each color
+        mean = np.mean(coords_data, axis=1, keepdims=True)                            # center of each color
         cov_mat = np.cov(coords_data - mean, ddof = 1)                              # find covariance
         pca_val, pca_vector = np.linalg.eig(cov_mat)                                # find eigen vectors (also PCA first and second component)
         return mean, pca_vector, pca_val
 
+    # project the image colors onto vectors
+    # pca_output: from color_3d_PCA()
+    # dim: number of most significant vectors
+    def simplify_by_pca(self, image, pca_output, dim = 2):
+        pixel_colors = np.transpose(image,(2,0,1)).reshape(3,-1) # 3 x n, n = width * height
+        mean, pca_vector, pca_val = pca_output
+        sorted_pca = np.argsort(pca_val)
+        selected_vectors = pca_vector[:,sorted_pca[-dim:]] # 3 x k, k = dim
+        for i in range(dim):
+            if selected_vectors[1,i] < 0:
+                selected_vectors[:,i] = -selected_vectors[:,i]
+        print(selected_vectors)
+        reduced_data_points = np.dot(selected_vectors.T, pixel_colors) # k x 3 * 3 x n
+        print(reduced_data_points)
+        reduced_data_points = np.where(np.min(reduced_data_points, axis=0) < 0, reduced_data_points - np.min(reduced_data_points, axis=0), reduced_data_points)
+        for i in range(3-dim):
+            reduced_data_points = np.vstack((np.min(reduced_data_points, axis=0) * np.ones(reduced_data_points.shape[1]).reshape(1,-1),reduced_data_points))
+        print(reduced_data_points.T.reshape((image.shape)).astype(int))
+        return reduced_data_points.T.reshape((image.shape)).astype(int)
+        
+        
