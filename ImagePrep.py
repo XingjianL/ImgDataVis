@@ -69,6 +69,11 @@ class ImagePrep:
     # input: colored image
     # output: mean and PCA vector, values of the colors in the image
     # for transforming and compressing the colors, which may be useful for analysis as demonstrated in 3d visualization
-    def color_3d_PCA(image):
+    def color_3d_PCA(self, image):
         pca_vector =[]
+        coords_data = image.reshape((-1,3)).T            # 3 x n matrix of coords [[b1,b2,...],[g1,g2,...],[r1,r2,...]]
+        mean = np.mean(coords_data,axis=1,keepdims=True)                            # center of each color
+        cov_mat = np.cov(coords_data - mean, ddof = 1)                              # find covariance
+        pca_val, pca_vector = np.linalg.eig(cov_mat)                                # find eigen vectors (also PCA first and second component)
+        return mean, pca_vector, pca_val
 
