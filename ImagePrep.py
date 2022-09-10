@@ -77,24 +77,36 @@ class ImagePrep:
         pca_val, pca_vector = np.linalg.eig(cov_mat)                                # find eigen vectors (also PCA first and second component)
         return mean, pca_vector, pca_val
 
-    # project the image colors onto vectors
+    # project the image colors onto vectors (can select between 1 or 2 vectors)
     # pca_output: from color_3d_PCA()
     # dim: number of most significant vectors
+    # output: image with PCA color reduction
     def simplify_by_pca(self, image, pca_output, dim = 2):
+        # prepare the color information from the image
         pixel_colors = np.transpose(image,(2,0,1)).reshape(3,-1) # 3 x n, n = width * height
         mean, pca_vector, pca_val = pca_output
+        # find the most significant vectors
         sorted_pca = np.argsort(pca_val)
+        # filter out the unimportant ones
         selected_vectors = pca_vector[:,sorted_pca[-dim:]] # 3 x k, k = dim
+
+        # sometimes the vectors go in the negative direction, this loop makes the vectors more consistent
         for i in range(dim):
             if selected_vectors[1,i] < 0:
                 selected_vectors[:,i] = -selected_vectors[:,i]
-        print(selected_vectors)
-        reduced_data_points = np.dot(selected_vectors.T, pixel_colors) # k x 3 * 3 x n
-        print(reduced_data_points)
+
+        # compute locations in the reduced dimension
+        reduced_data_points = np.dot(selected_vectors.T, pixel_colors) # k x 3 * 3 x n -> k x n
+
+        # shift the color above 0
         reduced_data_points = np.where(np.min(reduced_data_points, axis=0) < 0, reduced_data_points - np.min(reduced_data_points, axis=0), reduced_data_points)
+        
+        # add pixels to keep the output with 3 colors, using the minimum of the existing ones
+        # k x n -> 3 x n
         for i in range(3-dim):
             reduced_data_points = np.vstack((np.min(reduced_data_points, axis=0) * np.ones(reduced_data_points.shape[1]).reshape(1,-1),reduced_data_points))
-        print(reduced_data_points.T.reshape((image.shape)).astype(int))
+
+        # convert the 3 x n matrix to original image shape
         return reduced_data_points.T.reshape((image.shape)).astype(int)
         
         
